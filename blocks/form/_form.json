@@ -11,13 +11,13 @@
               "name": "Form",
               "model": "form",
               "filter": "form",
-              "formId": "enquiry",
-              "submitMode": "rest",
-              "submitUrl": "",
-              "spreadsheetPath": "/content/eds-k/test/form",
-              "submitLabel": "Submit",
-              "successMessage": "Thank you. Your enquiry has been submitted.",
-              "errorMessage": "Sorry, something went wrong. Please try again."
+              "submit_formId": "enquiry",
+              "submit_mode": "rest",
+              "submit_url": "",
+              "submit_spreadsheetPath": "/content/eds-k/test/form",
+              "ui_submitLabel": "Submit",
+              "ui_successMessage": "Thank you. Your enquiry has been submitted.",
+              "ui_errorMessage": "Sorry, something went wrong. Please try again."
             }
           }
         }
@@ -47,7 +47,7 @@
         {
           "component": "text",
           "valueType": "string",
-          "name": "formId",
+          "name": "submit_formId",
           "label": "Form ID",
           "description": "Identifier included in the submission payload",
           "value": "enquiry"
@@ -55,7 +55,7 @@
         {
           "component": "select",
           "valueType": "string",
-          "name": "submitMode",
+          "name": "submit_mode",
           "label": "Submit Type",
           "value": "rest",
           "options": [
@@ -66,14 +66,14 @@
         {
           "component": "text",
           "valueType": "string",
-          "name": "submitUrl",
+          "name": "submit_url",
           "label": "Submit URL",
           "description": "REST endpoint or public spreadsheet proxy URL"
         },
         {
           "component": "text",
           "valueType": "string",
-          "name": "spreadsheetPath",
+          "name": "submit_spreadsheetPath",
           "label": "Spreadsheet Path",
           "description": "AEM Author spreadsheet path (spreadsheet submit type)",
           "value": "/content/eds-k/test/form"
@@ -81,21 +81,21 @@
         {
           "component": "text",
           "valueType": "string",
-          "name": "submitLabel",
+          "name": "ui_submitLabel",
           "label": "Submit Button Label",
           "value": "Submit"
         },
         {
           "component": "text",
           "valueType": "string",
-          "name": "successMessage",
+          "name": "ui_successMessage",
           "label": "Success Message",
           "value": "Thank you. Your enquiry has been submitted."
         },
         {
           "component": "text",
           "valueType": "string",
-          "name": "errorMessage",
+          "name": "ui_errorMessage",
           "label": "Error Message",
           "value": "Sorry, something went wrong. Please try again."
         }

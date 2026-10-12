@@ -138,13 +138,13 @@
                   "name": "Form",
                   "model": "form",
                   "filter": "form",
-                  "formId": "enquiry",
-                  "submitMode": "rest",
-                  "submitUrl": "",
-                  "spreadsheetPath": "/content/eds-k/test/form",
-                  "submitLabel": "Submit",
-                  "successMessage": "Thank you. Your enquiry has been submitted.",
-                  "errorMessage": "Sorry, something went wrong. Please try again."
+                  "submit_formId": "enquiry",
+                  "submit_mode": "rest",
+                  "submit_url": "",
+                  "submit_spreadsheetPath": "/content/eds-k/test/form",
+                  "ui_submitLabel": "Submit",
+                  "ui_successMessage": "Thank you. Your enquiry has been submitted.",
+                  "ui_errorMessage": "Sorry, something went wrong. Please try again."
                 }
               }
             }
