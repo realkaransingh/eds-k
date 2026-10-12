@@ -37,7 +37,9 @@
   --heading-font-size-xs: 22px;
 
   /* nav height */
-  --nav-height: 64px;
+  --nav-top-height: 56px;
+  --nav-bottom-height: 0px;
+  --nav-height: var(--nav-top-height);
 }
 
 /* fallback fonts */
@@ -67,6 +69,11 @@
     --heading-font-size-m: 22px;
     --heading-font-size-s: 20px;
     --heading-font-size-xs: 18px;
+
+    /* nav height — two-tier desktop header */
+    --nav-top-height: 64px;
+    --nav-bottom-height: 52px;
+    --nav-height: calc(var(--nav-top-height) + var(--nav-bottom-height));
   }
 }
 
