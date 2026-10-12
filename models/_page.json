@@ -21,6 +21,27 @@
           "name": "keywords",
           "multi": true,
           "label": "Keywords"
+        },
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "nav-title",
+          "label": "Navigation Title",
+          "description": "Optional short label used in the header mega-nav. Falls back to the page title."
+        },
+        {
+          "component": "number",
+          "valueType": "number",
+          "name": "nav-order",
+          "label": "Navigation Order",
+          "description": "Sort order in the header mega-nav. Lower numbers appear first."
+        },
+        {
+          "component": "boolean",
+          "valueType": "boolean",
+          "name": "hide-in-nav",
+          "label": "Hide in Navigation",
+          "description": "When enabled, this page is excluded from the auto-built header mega-nav."
         }
       ]
     }

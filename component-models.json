@@ -20,6 +20,27 @@
         "name": "keywords",
         "multi": true,
         "label": "Keywords"
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "nav-title",
+        "label": "Navigation Title",
+        "description": "Optional short label used in the header mega-nav. Falls back to the page title."
+      },
+      {
+        "component": "number",
+        "valueType": "number",
+        "name": "nav-order",
+        "label": "Navigation Order",
+        "description": "Sort order in the header mega-nav. Lower numbers appear first."
+      },
+      {
+        "component": "boolean",
+        "valueType": "boolean",
+        "name": "hide-in-nav",
+        "label": "Hide in Navigation",
+        "description": "When enabled, this page is excluded from the auto-built header mega-nav."
       }
     ]
   },
@@ -214,68 +235,5 @@
         "valueType": "string"
       }
     ]
-  },
-  {
-    "id": "quote",
-    "fields": [
-       {
-         "component": "richtext",
-         "name": "quote",
-         "value": "",
-         "label": "Quote",
-         "valueType": "string"
-       },
-       {
-         "component": "text",
-         "valueType": "string",
-         "name": "author",
-         "label": "Author",
-         "value": ""
-       },
-       {
-        "component": "select",
-        "name": "classes",
-        "value": "",
-        "label": "Background Color",
-        "description": "The quote background color",
-        "valueType": "string",
-        "options": [
-          {
-            "name": "Red",
-            "value": "bg-red"
-          },
-          {
-            "name": "Green",
-            "value": "bg-green"
-          },
-          {
-            "name": "Blue",
-            "value": "bg-blue"
-          }
-        ]
-      },
-      {
-        "component": "select",
-        "name": "classes_text",
-        "value": "",
-        "label": "Text Color",
-        "description": "The quote text color",
-        "valueType": "string",
-        "options": [
-          {
-            "name": "Red",
-            "value": "color-red"
-          },
-          {
-            "name": "Green",
-            "value": "color-green"
-          },
-          {
-            "name": "Blue",
-            "value": "color-blue"
-          }
-        ]
-      }
-     ]
   }
 ]
