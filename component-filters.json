@@ -44,6 +44,7 @@
   {
     "id": "form",
     "components": [
+      "form-settings",
       "form-field"
     ]
   }

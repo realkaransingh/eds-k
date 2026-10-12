@@ -1,5 +1,12 @@
 # Form spreadsheet submit contract
 
+## Authoring in Universal Editor
+
+1. Add a **Form** block to the section (container only — like Cards).
+2. Inside Form, add **Form Settings** (submit type, URL, spreadsheet path, messages).
+3. Inside Form, add one or more **Form Field** items (type, name, label, options).
+4. Delete and re-add any Form created before this container fix; old nodes may not accept children.
+
 The `form` block supports `submitMode: spreadsheet`. The browser never talks to AEM Author directly. It `POST`s JSON to a **public proxy** (`submitUrl`). The proxy appends a row to an AEM Author spreadsheet.
 
 ## Target spreadsheet

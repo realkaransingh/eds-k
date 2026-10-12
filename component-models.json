@@ -201,7 +201,7 @@
     ]
   },
   {
-    "id": "form",
+    "id": "form-settings",
     "fields": [
       {
         "component": "text",
