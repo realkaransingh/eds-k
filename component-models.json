@@ -201,7 +201,7 @@
     ]
   },
   {
-    "id": "form-settings",
+    "id": "form",
     "fields": [
       {
         "component": "text",
@@ -246,13 +246,13 @@
     ]
   },
   {
-    "id": "form-field",
+    "id": "form-text",
     "fields": [
       {
         "component": "select",
         "valueType": "string",
-        "name": "type",
-        "label": "Field Type",
+        "name": "constraint",
+        "label": "Constraint",
         "value": "text",
         "options": [
           {
@@ -270,18 +270,6 @@
           {
             "name": "Textarea",
             "value": "textarea"
-          },
-          {
-            "name": "Radio",
-            "value": "radio"
-          },
-          {
-            "name": "Checkbox",
-            "value": "checkbox"
-          },
-          {
-            "name": "Dropdown",
-            "value": "select"
           },
           {
             "name": "Date",
@@ -307,9 +295,105 @@
       {
         "component": "textarea",
         "valueType": "string",
-        "name": "options",
-        "label": "Options / Settings",
-        "description": "Optional lines: required | placeholder: text | help: text. Then one option per line for radio, checkbox, or select (value|Label or Label)."
+        "name": "settings",
+        "label": "Settings",
+        "description": "Optional lines: required | placeholder: text | help: text"
+      }
+    ]
+  },
+  {
+    "id": "form-options",
+    "fields": [
+      {
+        "component": "select",
+        "valueType": "string",
+        "name": "optionKind",
+        "label": "Option Kind",
+        "value": "select",
+        "options": [
+          {
+            "name": "Dropdown",
+            "value": "select"
+          },
+          {
+            "name": "Radio",
+            "value": "radio"
+          },
+          {
+            "name": "Checkbox",
+            "value": "checkbox"
+          }
+        ]
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "fieldName",
+        "label": "Field Name",
+        "description": "Name in the submission payload; for spreadsheet submit must match the column header",
+        "required": true
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "label",
+        "label": "Label",
+        "required": true
+      },
+      {
+        "component": "textarea",
+        "valueType": "string",
+        "name": "choices",
+        "label": "Choices / Settings",
+        "description": "Optional: required | placeholder: text | help: text. Then one choice per line (value|Label or Label)."
+      }
+    ]
+  },
+  {
+    "id": "form-hidden",
+    "fields": [
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "fieldName",
+        "label": "Field Name",
+        "required": true
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "value",
+        "label": "Value"
+      }
+    ]
+  },
+  {
+    "id": "form-button",
+    "fields": [
+      {
+        "component": "select",
+        "valueType": "string",
+        "name": "buttonKind",
+        "label": "Button Kind",
+        "value": "submit",
+        "options": [
+          {
+            "name": "Submit",
+            "value": "submit"
+          },
+          {
+            "name": "Reset",
+            "value": "reset"
+          }
+        ]
+      },
+      {
+        "component": "text",
+        "valueType": "string",
+        "name": "label",
+        "label": "Label",
+        "value": "Submit",
+        "required": true
       }
     ]
   },

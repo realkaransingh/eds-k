@@ -2,14 +2,18 @@
 
 ## Authoring in Universal Editor
 
-1. Add a **Form** block to the section (container only — like Cards).
-2. Inside Form, add **Form Settings** (form ID, submit type, URL, spreadsheet path).
-3. Inside Form, add one or more **Form Field** items (type, **field name**, label, options).
-4. Delete and re-add any Form created with older definitions; then hard-refresh UE.
+1. Add a **Form** block to the section.
+2. Select the Form block and set **Properties**: Form ID, Submit Type (`rest` or `spreadsheet`), Submit URL, Spreadsheet Path.
+3. Inside Form, add child items as needed:
+   - **Form Text** — text, email, tel, textarea, date
+   - **Form Options** — dropdown, radio, or checkbox (+ choices)
+   - **Form Hidden** — name + value
+   - **Form Button** — submit or reset (if omitted, a default Submit button is rendered)
+4. Delete and re-add any Form / Form Field / Form Settings created with older definitions; then hard-refresh UE.
 
-Note: Form Field uses the property `fieldName` (not `name`) so it does not collide with the UE item identity `name`.
+Field **Name** (`fieldName`) is used in the submission payload. For spreadsheet submit it must match the column header. Optional settings (required, placeholder, help, choices) use the Settings / Choices textarea on each item.
 
-The `form` block supports `submitMode: spreadsheet`. The browser never talks to AEM Author directly. It `POST`s JSON (no client `Authorization` header) to a **public proxy** (`submitUrl`). The proxy appends a row to an AEM Author spreadsheet.
+The browser never talks to AEM Author directly. It `POST`s JSON (no client `Authorization` header) to a **public proxy** (`submitUrl`). The proxy appends a row to an AEM Author spreadsheet.
 
 Recommended proxy: [AEM Edge Functions](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/edge-functions) with the Author Bearer stored as a **Cloud Manager secret** (`edgeFunctions.yaml` → `secrets`), not in this EDS site repo.
 
@@ -20,8 +24,6 @@ Recommended proxy: [AEM Edge Functions](https://experienceleague.adobe.com/en/do
 | Author path | `/content/eds-k/test/form` |
 | Example Author URL | `https://author-<p>-<e>.adobeaemcloud.com/content/eds-k/test/form.html` |
 | Demo columns | `Name`, `Email`, `Phone` |
-
-Field **Name** values in the form must match spreadsheet column headers exactly when those values should land in the sheet.
 
 ## Browser → proxy payload
 

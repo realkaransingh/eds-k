@@ -44,8 +44,10 @@
   {
     "id": "form",
     "components": [
-      "form-settings",
-      "form-field"
+      "form-text",
+      "form-options",
+      "form-hidden",
+      "form-button"
     ]
   }
 ]

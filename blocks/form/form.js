@@ -1,13 +1,14 @@
 /**
- * Form block — builds authorable fields and submits via REST or spreadsheet proxy.
+ * Form block — Core-style items (text, options, hidden, button) with REST / spreadsheet submit.
  * @param {Element} block The block element
  */
 
 import { moveInstrumentation } from '../../scripts/scripts.js';
 
-const FIELD_TYPES = new Set([
-  'text', 'email', 'tel', 'textarea', 'radio', 'checkbox', 'select', 'date',
-]);
+const TEXT_TYPES = new Set(['text', 'email', 'tel', 'textarea', 'date']);
+const OPTION_TYPES = new Set(['radio', 'checkbox', 'select']);
+const BUTTON_TYPES = new Set(['submit', 'reset']);
+const LEGACY_FIELD_TYPES = new Set([...TEXT_TYPES, ...OPTION_TYPES]);
 
 const CONFIG_KEYS = {
   formid: 'formId',
@@ -51,7 +52,6 @@ function el(tag, className) {
 }
 
 /**
- * Stable HTML id from a field name (payload name stays unchanged).
  * @param {string} name
  * @param {string} [suffix]
  * @returns {string}
@@ -62,11 +62,11 @@ function fieldDomId(name, suffix = '') {
 }
 
 /**
- * Parses the options/settings cell for a field.
+ * Settings / choices cell: required / placeholder / help / choice lines.
  * @param {string} optionsText
- * @returns {object} required, placeholder, help, and choices
+ * @returns {object}
  */
-function parseOptionsCell(optionsText = '') {
+function parseLegacyOptionsCell(optionsText = '') {
   const result = {
     required: false,
     placeholder: '',
@@ -101,7 +101,7 @@ function parseOptionsCell(optionsText = '') {
 }
 
 /**
- * Form Settings item row: formId | submitMode | submitUrl | spreadsheetPath
+ * Legacy Form Settings row: formId | submitMode | submitUrl | spreadsheetPath
  * @param {string[]} texts
  * @param {typeof DEFAULT_CONFIG} config
  * @returns {boolean}
@@ -109,8 +109,9 @@ function parseOptionsCell(optionsText = '') {
 function applySettingsRow(texts, config) {
   if (texts.length !== 4) return false;
   const [formId, submitMode, submitUrl, spreadsheetPath] = texts;
-  if (!formId || FIELD_TYPES.has(formId.toLowerCase())) return false;
+  if (!formId || LEGACY_FIELD_TYPES.has(formId.toLowerCase())) return false;
   if (CONFIG_KEYS[formId.toLowerCase()]) return false;
+  if (BUTTON_TYPES.has(formId.toLowerCase())) return false;
 
   config.formId = formId;
   if (submitMode) config.submitMode = submitMode;
@@ -120,51 +121,111 @@ function applySettingsRow(texts, config) {
 }
 
 /**
+ * Block model / dataset / classes from UE.
  * @param {Element} block
- * @returns {{
- *   config: typeof DEFAULT_CONFIG,
- *   items: Array<{ row: Element, kind: 'config'|'settings'|'field', field?: object }>
- * }}
+ * @param {typeof DEFAULT_CONFIG} config
  */
-function parseBlock(block) {
-  const config = { ...DEFAULT_CONFIG };
-  const items = [];
-  let settingsApplied = false;
+function applyBlockLevelConfig(block, config) {
+  ['formId', 'submitMode', 'submitUrl', 'spreadsheetPath', 'submitLabel'].forEach((key) => {
+    if (block.dataset[key]) config[key] = block.dataset[key];
+  });
+  if (block.classList.contains('spreadsheet')) config.submitMode = 'spreadsheet';
+  else if (block.classList.contains('rest')) config.submitMode = 'rest';
+}
 
-  [...block.children].forEach((row) => {
-    const cells = [...row.children];
-    if (!cells.length) return;
+/**
+ * @param {Element} row
+ * @param {string[]} texts
+ * @param {string} aueModel
+ * @returns {{ kind: string, field?: object, button?: object }|null}
+ */
+function parseItemRow(row, texts, aueModel) {
+  const instrumented = row.hasAttribute('data-aue-resource');
 
-    const texts = cells.map((cell) => cell.textContent.trim());
-    const key = texts[0]?.toLowerCase();
+  if (aueModel === 'form-text'
+    || (TEXT_TYPES.has(texts[0]?.toLowerCase()) && texts.length >= 3)) {
+    const [constraint, fieldName, label, settingsRaw = ''] = texts;
+    const type = TEXT_TYPES.has(constraint?.toLowerCase()) ? constraint.toLowerCase() : 'text';
+    const settings = parseLegacyOptionsCell(settingsRaw);
+    return {
+      kind: 'field',
+      field: {
+        type,
+        name: fieldName || '',
+        label: label || '',
+        required: settings.required,
+        placeholder: settings.placeholder,
+        help: settings.help,
+        choices: [],
+      },
+    };
+  }
 
-    if (cells.length === 2 && CONFIG_KEYS[key]) {
-      const prop = CONFIG_KEYS[key];
-      const [, value] = texts;
-      if (value) config[prop] = value;
-      items.push({ row, kind: 'config' });
-      return;
+  if (aueModel === 'form-options'
+    || (OPTION_TYPES.has(texts[0]?.toLowerCase()) && texts.length >= 3)) {
+    const [optionType, fieldName, label, choicesRaw = ''] = texts;
+    const type = OPTION_TYPES.has(optionType?.toLowerCase()) ? optionType.toLowerCase() : 'select';
+    const settings = parseLegacyOptionsCell(choicesRaw);
+    return {
+      kind: 'field',
+      field: {
+        type,
+        name: fieldName || '',
+        label: label || '',
+        required: settings.required,
+        placeholder: settings.placeholder,
+        help: settings.help,
+        choices: settings.choices,
+      },
+    };
+  }
+
+  if (aueModel === 'form-hidden'
+    || (texts.length === 2
+      && !CONFIG_KEYS[texts[0]?.toLowerCase()]
+      && !BUTTON_TYPES.has(texts[0]?.toLowerCase())
+      && !LEGACY_FIELD_TYPES.has(texts[0]?.toLowerCase()))) {
+    const [fieldName, value = ''] = texts;
+    if (aueModel === 'form-hidden' || instrumented || (fieldName && !CONFIG_KEYS[fieldName.toLowerCase()])) {
+      return {
+        kind: 'field',
+        field: {
+          type: 'hidden',
+          name: fieldName || '',
+          label: fieldName || 'hidden',
+          value: value || '',
+          required: false,
+          placeholder: '',
+          help: '',
+          choices: [],
+        },
+      };
     }
+  }
 
-    const aueModel = row.getAttribute('data-aue-model');
-    if ((!settingsApplied && applySettingsRow(texts, config))
-      || aueModel === 'form-settings') {
-      if (!settingsApplied) applySettingsRow(texts, config);
-      settingsApplied = true;
-      items.push({ row, kind: 'settings' });
-      return;
-    }
+  if (aueModel === 'form-button'
+    || (texts.length === 2 && BUTTON_TYPES.has(texts[0]?.toLowerCase()))) {
+    const [buttonType, label = ''] = texts;
+    const type = BUTTON_TYPES.has(buttonType?.toLowerCase()) ? buttonType.toLowerCase() : 'submit';
+    return {
+      kind: 'button',
+      button: {
+        type,
+        label: label || (type === 'reset' ? 'Reset' : 'Submit'),
+      },
+    };
+  }
 
+  // Legacy Form Field: type | fieldName | label | options
+  if (aueModel === 'form-field' || LEGACY_FIELD_TYPES.has(texts[0]?.toLowerCase())) {
     const [typeRaw, fieldName, label, optionsRaw = ''] = texts;
     const type = typeRaw?.toLowerCase();
-    if (!FIELD_TYPES.has(type) || cells.length < 3) {
-      // Keep UE-instrumented rows even when properties are still empty
-      if (row.hasAttribute('data-aue-resource') || aueModel === 'form-field') {
-        items.push({
-          row,
+    if (!LEGACY_FIELD_TYPES.has(type) || texts.length < 3) {
+      if (instrumented || aueModel === 'form-field') {
+        return {
           kind: 'field',
           field: {
-            type: FIELD_TYPES.has(type) ? type : 'text',
+            type: LEGACY_FIELD_TYPES.has(type) ? type : 'text',
             name: fieldName || '',
             label: label || '',
             required: false,
@@ -172,14 +233,12 @@ function parseBlock(block) {
             help: '',
             choices: [],
           },
-        });
+        };
       }
-      return;
+      return null;
     }
-
-    const optionsMeta = parseOptionsCell(optionsRaw);
-    items.push({
-      row,
+    const optionsMeta = parseLegacyOptionsCell(optionsRaw);
+    return {
       kind: 'field',
       field: {
         type,
@@ -190,21 +249,84 @@ function parseBlock(block) {
         help: optionsMeta.help,
         choices: optionsMeta.choices,
       },
-    });
+    };
+  }
+
+  if (instrumented) {
+    return {
+      kind: 'field',
+      field: {
+        type: 'text',
+        name: '',
+        label: '',
+        required: false,
+        placeholder: '',
+        help: '',
+        choices: [],
+      },
+    };
+  }
+
+  return null;
+}
+
+/**
+ * @param {Element} block
+ * @returns {{
+ *   config: typeof DEFAULT_CONFIG,
+ *   items: Array<{ row: Element, kind: string, field?: object, button?: object }>
+ * }}
+ */
+function parseBlock(block) {
+  const config = { ...DEFAULT_CONFIG };
+  applyBlockLevelConfig(block, config);
+  const items = [];
+  let settingsApplied = false;
+
+  [...block.children].forEach((row) => {
+    const cells = [...row.children];
+    if (!cells.length) return;
+
+    const texts = cells.map((cell) => cell.textContent.trim());
+    const key = texts[0]?.toLowerCase();
+    const aueModel = row.getAttribute('data-aue-model');
+
+    if (cells.length === 2 && CONFIG_KEYS[key]) {
+      const prop = CONFIG_KEYS[key];
+      const [, value] = texts;
+      if (value) config[prop] = value;
+      // Key-value config rows are not form controls; keep UE node only if instrumented
+      if (row.hasAttribute('data-aue-resource')) {
+        items.push({ row, kind: 'config' });
+      }
+      return;
+    }
+
+    if ((!settingsApplied && applySettingsRow(texts, config))
+      || aueModel === 'form-settings') {
+      if (!settingsApplied) applySettingsRow(texts, config);
+      settingsApplied = true;
+      if (row.hasAttribute('data-aue-resource')) {
+        items.push({ row, kind: 'settings' });
+      }
+      return;
+    }
+
+    const parsed = parseItemRow(row, texts, aueModel);
+    if (parsed) items.push({ row, ...parsed });
   });
 
   return { config, items };
 }
 
 /**
- * Placeholder so UE can select an item before name/label are authored.
  * @param {object} [field]
  * @returns {HTMLElement}
  */
 function buildFieldPlaceholder(field) {
   const wrap = el('div', 'form-field form-field-placeholder');
   const type = field?.type || 'text';
-  wrap.textContent = field?.label || field?.name || `Form field (${type}) — set Name and Label in Properties`;
+  wrap.textContent = field?.label || field?.name || `Form field (${type}) — set properties in the rail`;
   return wrap;
 }
 
@@ -225,7 +347,7 @@ function buildLabel(text, htmlFor, required = false, tag = 'label') {
 
 /**
  * @param {object} field
- * @returns {HTMLElement}
+ * @returns {HTMLElement|null}
  */
 function buildHelp(field) {
   if (!field.help) return null;
@@ -233,6 +355,19 @@ function buildHelp(field) {
   help.id = `${fieldDomId(field.name)}-help`;
   help.textContent = field.help;
   return help;
+}
+
+/**
+ * @param {object} field
+ * @returns {HTMLElement}
+ */
+function buildHiddenField(field) {
+  const input = el('input');
+  input.type = 'hidden';
+  input.name = field.name;
+  input.value = field.value || '';
+  input.className = 'form-field form-field-hidden';
+  return input;
 }
 
 /**
@@ -338,7 +473,9 @@ function buildSelectField(field) {
  * @returns {HTMLElement|null}
  */
 function buildField(field) {
-  if (!field.name || !field.label) return null;
+  if (!field.name) return null;
+  if (field.type === 'hidden') return buildHiddenField(field);
+  if (!field.label) return null;
   if (field.type === 'radio' || field.type === 'checkbox') {
     if (!field.choices.length) return null;
     return buildChoiceGroup(field);
@@ -348,6 +485,17 @@ function buildField(field) {
     return buildSelectField(field);
   }
   return buildTextLikeField(field);
+}
+
+/**
+ * @param {object} button
+ * @returns {HTMLElement}
+ */
+function buildButton(button) {
+  const btn = el('button', button.type === 'reset' ? 'form-reset' : 'form-submit');
+  btn.type = button.type === 'reset' ? 'reset' : 'submit';
+  btn.textContent = button.label || (button.type === 'reset' ? 'Reset' : 'Submit');
+  return btn;
 }
 
 /**
@@ -393,8 +541,6 @@ function setStatus(statusEl, kind, message) {
 }
 
 /**
- * Both submit modes use the same JSON POST; spreadsheet mode targets a proxy URL.
- * Author auth must live on the proxy (Edge Function + Cloud Manager secret).
  * @param {string} url
  * @param {object} payload
  * @returns {Promise<Response>}
@@ -473,7 +619,12 @@ export default async function decorate(block) {
   if (config.formId) form.dataset.formId = config.formId;
   if (config.spreadsheetPath) form.dataset.spreadsheetPath = config.spreadsheetPath;
 
-  items.forEach(({ row, kind, field }) => {
+  const actions = el('div', 'form-actions');
+  let hasSubmitButton = false;
+
+  items.forEach(({
+    row, kind, field, button,
+  }) => {
     if (kind === 'field') {
       let fieldEl = buildField(field);
       if (!fieldEl && row.hasAttribute('data-aue-resource')) {
@@ -485,7 +636,15 @@ export default async function decorate(block) {
       return;
     }
 
-    // Settings / config rows: keep a selectable node in UE only
+    if (kind === 'button') {
+      const btn = buildButton(button);
+      if (button.type === 'submit') hasSubmitButton = true;
+      moveInstrumentation(row, btn);
+      actions.append(btn);
+      return;
+    }
+
+    // Legacy settings / stray config with UE instrumentation only
     if (!row.hasAttribute('data-aue-resource')) return;
     const wrap = el('div', `form-author-item form-author-${kind}`);
     wrap.textContent = kind === 'settings'
@@ -495,12 +654,12 @@ export default async function decorate(block) {
     form.append(wrap);
   });
 
-  const actions = el('div', 'form-actions');
-  const submit = el('button', 'form-submit');
-  submit.type = 'submit';
-  submit.textContent = config.submitLabel || 'Submit';
-  actions.append(submit);
-  form.append(actions);
+  if (!hasSubmitButton) {
+    const submit = buildButton({ type: 'submit', label: config.submitLabel || 'Submit' });
+    actions.append(submit);
+  }
+
+  if (actions.children.length) form.append(actions);
 
   const status = el('p', 'form-status');
   status.hidden = true;
