@@ -394,6 +394,7 @@ function setStatus(statusEl, kind, message) {
 
 /**
  * Both submit modes use the same JSON POST; spreadsheet mode targets a proxy URL.
+ * Author auth must live on the proxy (Edge Function + Cloud Manager secret).
  * @param {string} url
  * @param {object} payload
  * @returns {Promise<Response>}

@@ -9,7 +9,9 @@
 
 Note: Form Field uses the property `fieldName` (not `name`) so it does not collide with the UE item identity `name`.
 
-The `form` block supports `submitMode: spreadsheet`. The browser never talks to AEM Author directly. It `POST`s JSON to a **public proxy** (`submitUrl`). The proxy appends a row to an AEM Author spreadsheet.
+The `form` block supports `submitMode: spreadsheet`. The browser never talks to AEM Author directly. It `POST`s JSON (no client `Authorization` header) to a **public proxy** (`submitUrl`). The proxy appends a row to an AEM Author spreadsheet.
+
+Recommended proxy: [AEM Edge Functions](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/edge-functions) with the Author Bearer stored as a **Cloud Manager secret** (`edgeFunctions.yaml` → `secrets`), not in this EDS site repo.
 
 ## Target spreadsheet
 
@@ -84,7 +86,9 @@ Map only columns that exist on the sheet. Extra `data` keys can be ignored or ca
 
 ## Security notes
 
+- Do **not** put IMS/Author Bearer tokens in `blocks/form/form.js` or any client-side code (GitHub push protection will block them; browsers can read them anyway).
 - Do **not** call `/bin/asynccommand` from the published site with author credentials.
+- Store the Author token on the proxy only (Cloud Manager secret for Edge Functions, or equivalent env secret for another backend).
 - Restrict who can open `/content/eds-k/test/form` in Author (PII).
 - Validate/sanitize field values in the proxy before import.
 - Prefer rate limiting and bot protection on the public `submitUrl` (captcha can be added later).
