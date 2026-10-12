@@ -1,0 +1,133 @@
+.form .form-element {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 40rem;
+}
+
+.form .form-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.form .form-field label,
+.form .form-field legend {
+  font-size: var(--body-font-size-s);
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.form .form-field label[data-required='true']::after,
+.form .form-field legend[data-required='true']::after {
+  content: ' *';
+  color: #b00020;
+}
+
+.form .form-field input,
+.form .form-field textarea,
+.form .form-field select {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--dark-color);
+  border-radius: 4px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font: inherit;
+  font-size: var(--body-font-size-xs);
+}
+
+.form .form-field textarea {
+  resize: vertical;
+  min-height: 7rem;
+}
+
+.form .form-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-weight: 400;
+}
+
+.form .form-option input[type='checkbox'],
+.form .form-option input[type='radio'] {
+  width: auto;
+  margin-top: 0.25rem;
+}
+
+.form .form-field input:hover,
+.form .form-field textarea:hover,
+.form .form-field select:hover {
+  border-color: var(--link-color);
+}
+
+.form .form-field input:focus,
+.form .form-field textarea:focus,
+.form .form-field select:focus {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+
+.form .form-field-radio,
+.form .form-field-checkbox {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
+.form .form-field-help {
+  margin: 0;
+  color: var(--dark-color);
+  font-size: var(--body-font-size-xs);
+}
+
+.form .form-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.form .form-submit {
+  appearance: none;
+  border: 0;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--link-color);
+  color: var(--background-color);
+  font: inherit;
+  font-size: var(--body-font-size-s);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.form .form-submit:hover {
+  background-color: var(--link-hover-color);
+}
+
+.form .form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form .form-status {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: var(--body-font-size-xs);
+}
+
+.form .form-status-success {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+}
+
+.form .form-status-error {
+  background-color: #fdecea;
+  color: #b00020;
+}
+
+@media (width >= 900px) {
+  .form .form-element {
+    gap: 1.5rem;
+  }
+}
