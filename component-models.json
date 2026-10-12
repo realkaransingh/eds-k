@@ -256,7 +256,7 @@
       },
       {
         "component": "select",
-        "name": "classes",
+        "name": "classes_text",
         "value": "",
         "label": "Text Color",
         "description": "The quote text color",
