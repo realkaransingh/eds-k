@@ -3,9 +3,11 @@
 ## Authoring in Universal Editor
 
 1. Add a **Form** block to the section (container only — like Cards).
-2. Inside Form, add **Form Settings** (submit type, URL, spreadsheet path, messages).
-3. Inside Form, add one or more **Form Field** items (type, name, label, options).
-4. Delete and re-add any Form created before this container fix; old nodes may not accept children.
+2. Inside Form, add **Form Settings** (form ID, submit type, URL, spreadsheet path).
+3. Inside Form, add one or more **Form Field** items (type, **field name**, label, options).
+4. Delete and re-add any Form created with older definitions; then hard-refresh UE.
+
+Note: Form Field uses the property `fieldName` (not `name`) so it does not collide with the UE item identity `name`.
 
 The `form` block supports `submitMode: spreadsheet`. The browser never talks to AEM Author directly. It `POST`s JSON to a **public proxy** (`submitUrl`). The proxy appends a row to an AEM Author spreadsheet.
 

@@ -99,47 +99,21 @@ function parseOptionsCell(optionsText = '') {
 }
 
 /**
- * Text parts inside a grouped UE cell (child elements or line breaks).
- * @param {Element} cell
- * @returns {string[]}
- */
-function cellParts(cell) {
-  const children = [...cell.children].filter((child) => child.textContent.trim());
-  if (children.length > 1) {
-    return children.map((child) => child.textContent.trim());
-  }
-  return cell.textContent
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-/**
- * Applies grouped submit/ui config from a 2-cell settings row.
- * @param {Element} row
+ * Form Settings item row: formId | submitMode | submitUrl | spreadsheetPath
+ * @param {string[]} texts
  * @param {typeof DEFAULT_CONFIG} config
  * @returns {boolean}
  */
-function applyGroupedConfigRow(row, config) {
-  const cells = [...row.children];
-  if (cells.length !== 2) return false;
-  const [submitCell, uiCell] = cells;
-  const submitParts = cellParts(submitCell);
-  const uiParts = cellParts(uiCell);
-  const looksGrouped = submitParts.length >= 2 || uiParts.length >= 2;
-  if (!looksGrouped) return false;
+function applySettingsRow(texts, config) {
+  if (texts.length !== 4) return false;
+  const [formId, submitMode, submitUrl, spreadsheetPath] = texts;
+  if (!formId || FIELD_TYPES.has(formId.toLowerCase())) return false;
+  if (CONFIG_KEYS[formId.toLowerCase()]) return false;
 
-  const [formId, submitMode, submitUrl, spreadsheetPath] = submitParts;
-  const [submitLabel, successMessage, errorMessage] = uiParts;
-  if (FIELD_TYPES.has(formId?.toLowerCase())) return false;
-
-  if (formId) config.formId = formId;
+  config.formId = formId;
   if (submitMode) config.submitMode = submitMode;
-  if (submitUrl !== undefined) config.submitUrl = submitUrl;
+  config.submitUrl = submitUrl || '';
   if (spreadsheetPath) config.spreadsheetPath = spreadsheetPath;
-  if (submitLabel) config.submitLabel = submitLabel;
-  if (successMessage) config.successMessage = successMessage;
-  if (errorMessage) config.errorMessage = errorMessage;
   return true;
 }
 
@@ -150,16 +124,11 @@ function applyGroupedConfigRow(row, config) {
 function parseBlock(block) {
   const config = { ...DEFAULT_CONFIG };
   const fields = [];
-  let groupedConfigApplied = false;
+  let settingsApplied = false;
 
   [...block.children].forEach((row) => {
     const cells = [...row.children];
     if (!cells.length) return;
-
-    if (!groupedConfigApplied && applyGroupedConfigRow(row, config)) {
-      groupedConfigApplied = true;
-      return;
-    }
 
     const texts = cells.map((cell) => cell.textContent.trim());
     const key = texts[0]?.toLowerCase();
@@ -171,14 +140,19 @@ function parseBlock(block) {
       return;
     }
 
-    const [typeRaw, name, label, optionsRaw = ''] = texts;
+    if (!settingsApplied && applySettingsRow(texts, config)) {
+      settingsApplied = true;
+      return;
+    }
+
+    const [typeRaw, fieldName, label, optionsRaw = ''] = texts;
     const type = typeRaw?.toLowerCase();
     if (!FIELD_TYPES.has(type) || cells.length < 3) return;
 
     const optionsMeta = parseOptionsCell(optionsRaw);
     fields.push({
       type,
-      name,
+      name: fieldName,
       label,
       required: optionsMeta.required,
       placeholder: optionsMeta.placeholder,

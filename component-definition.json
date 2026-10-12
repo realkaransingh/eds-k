@@ -150,15 +150,12 @@
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block/item",
                 "template": {
-                  "name": "Settings",
+                  "name": "FormSettings",
                   "model": "form-settings",
-                  "submit_formId": "enquiry",
-                  "submit_mode": "rest",
-                  "submit_url": "",
-                  "submit_spreadsheetPath": "/content/eds-k/test/form",
-                  "ui_submitLabel": "Submit",
-                  "ui_successMessage": "Thank you. Your enquiry has been submitted.",
-                  "ui_errorMessage": "Sorry, something went wrong. Please try again."
+                  "formId": "enquiry",
+                  "submitMode": "rest",
+                  "submitUrl": "",
+                  "spreadsheetPath": "/content/eds-k/test/form"
                 }
               }
             }
@@ -172,7 +169,7 @@
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block/item",
                 "template": {
-                  "name": "Field",
+                  "name": "FormField",
                   "model": "form-field",
                   "type": "text"
                 }

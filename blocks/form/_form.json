@@ -23,15 +23,12 @@
           "page": {
             "resourceType": "core/franklin/components/block/v1/block/item",
             "template": {
-              "name": "Settings",
+              "name": "FormSettings",
               "model": "form-settings",
-              "submit_formId": "enquiry",
-              "submit_mode": "rest",
-              "submit_url": "",
-              "submit_spreadsheetPath": "/content/eds-k/test/form",
-              "ui_submitLabel": "Submit",
-              "ui_successMessage": "Thank you. Your enquiry has been submitted.",
-              "ui_errorMessage": "Sorry, something went wrong. Please try again."
+              "formId": "enquiry",
+              "submitMode": "rest",
+              "submitUrl": "",
+              "spreadsheetPath": "/content/eds-k/test/form"
             }
           }
         }
@@ -45,7 +42,7 @@
           "page": {
             "resourceType": "core/franklin/components/block/v1/block/item",
             "template": {
-              "name": "Field",
+              "name": "FormField",
               "model": "form-field",
               "type": "text"
             }
@@ -61,7 +58,7 @@
         {
           "component": "text",
           "valueType": "string",
-          "name": "submit_formId",
+          "name": "formId",
           "label": "Form ID",
           "description": "Identifier included in the submission payload",
           "value": "enquiry"
@@ -69,7 +66,7 @@
         {
           "component": "select",
           "valueType": "string",
-          "name": "submit_mode",
+          "name": "submitMode",
           "label": "Submit Type",
           "value": "rest",
           "options": [
@@ -80,38 +77,17 @@
         {
           "component": "text",
           "valueType": "string",
-          "name": "submit_url",
+          "name": "submitUrl",
           "label": "Submit URL",
           "description": "REST endpoint or public spreadsheet proxy URL"
         },
         {
           "component": "text",
           "valueType": "string",
-          "name": "submit_spreadsheetPath",
+          "name": "spreadsheetPath",
           "label": "Spreadsheet Path",
           "description": "AEM Author spreadsheet path (spreadsheet submit type)",
           "value": "/content/eds-k/test/form"
-        },
-        {
-          "component": "text",
-          "valueType": "string",
-          "name": "ui_submitLabel",
-          "label": "Submit Button Label",
-          "value": "Submit"
-        },
-        {
-          "component": "text",
-          "valueType": "string",
-          "name": "ui_successMessage",
-          "label": "Success Message",
-          "value": "Thank you. Your enquiry has been submitted."
-        },
-        {
-          "component": "text",
-          "valueType": "string",
-          "name": "ui_errorMessage",
-          "label": "Error Message",
-          "value": "Sorry, something went wrong. Please try again."
         }
       ]
     },
@@ -138,9 +114,9 @@
         {
           "component": "text",
           "valueType": "string",
-          "name": "name",
-          "label": "Name",
-          "description": "Field name in the payload; for spreadsheet submit must match the column header",
+          "name": "fieldName",
+          "label": "Field Name",
+          "description": "Name in the submission payload; for spreadsheet submit must match the column header",
           "required": true
         },
         {
