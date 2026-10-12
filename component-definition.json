@@ -138,7 +138,6 @@
                   "name": "Form",
                   "model": "form",
                   "filter": "form",
-                  "key-value": true,
                   "formId": "enquiry",
                   "submitMode": "rest",
                   "submitUrl": "",
