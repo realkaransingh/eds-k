@@ -1,83 +1,54 @@
 .block.quote {
-    background-color: #ccc;
-    padding: 0 0 24px;
-    display: flex;
-    flex-direction: column;
-    margin: 1rem 0;
+  background-color: #ccc;
+  padding: 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  margin: 1rem 0;
 }
 
 .block.quote blockquote {
-    margin: 16px;
-    text-indent: 0;
+  margin: 16px;
+  text-indent: 0;
 }
 
 .block.quote > div:last-child > div {
-    margin: 0 16px;
-    font-size: small;
-    font-style: italic;
-    position: relative;
+  margin: 0 16px;
+  font-size: small;
+  font-style: italic;
+  position: relative;
 }
 
 .block.quote > div:last-child > div::after {
-    content: "";
-    display: block;
-    position: absolute;
-    left: 0;
-    bottom: -8px;
-    height: 5px;
-    width: 30px;
-    background-color: darkgray;
-}.block.quote {
-    background-color: #ccc;
-    padding: 0 0 24px;
-    display: flex;
-    flex-direction: column;
-    margin: 1rem 0;
-}
-
-.block.quote blockquote {
-    margin: 16px;
-    text-indent: 0;
-}
-
-.block.quote > div:last-child > div {
-    margin: 0 16px;
-    font-size: small;
-    font-style: italic;
-    position: relative;
-}
-
-.block.quote > div:last-child > div::after {
-    content: "";
-    display: block;
-    position: absolute;
-    left: 0;
-    bottom: -8px;
-    height: 5px;
-    width: 30px;
-    background-color: darkgray;
+  content: '';
+  display: block;
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+  height: 5px;
+  width: 30px;
+  background-color: darkgray;
 }
 
 .block.quote.bg-red {
-    background-color: red;
+  background-color: red;
 }
 
 .block.quote.bg-green {
-    background-color: green;
+  background-color: green;
 }
 
 .block.quote.bg-blue {
-    background-color: blue;
+  background-color: blue;
 }
 
 .block.quote.color-red {
-    color: red;
+  color: red;
 }
 
 .block.quote.color-green {
-    color: green;
+  color: green;
 }
 
 .block.quote.color-blue {
-    color: blue;
+  color: blue;
 }

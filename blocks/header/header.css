@@ -216,7 +216,9 @@ header nav .nav-sections ul > li > ul > li {
     border-width: 2px 2px 0 0;
   }
 
-  header nav .nav-sections .nav-drop[aria-expanded='true']::after {
+  header nav .nav-sections .nav-drop[aria-expanded='true']::after,
+  header nav .nav-sections .nav-drop:hover::after,
+  header nav .nav-sections .nav-drop:focus-within::after {
     top: unset;
     bottom: 0.5em;
     transform: rotate(315deg);
@@ -235,18 +237,20 @@ header nav .nav-sections ul > li > ul > li {
 
   header nav .nav-sections .default-content-wrapper > ul > li > ul {
     display: none;
-    position: relative;
-  }
-
-  header nav .nav-sections .default-content-wrapper > ul > li[aria-expanded='true'] > ul {
-    display: block;
     position: absolute;
     left: -24px;
     width: 200px;
-    top: 150%;
+    top: 100%;
     padding: 16px;
+    padding-top: 20px;
     background-color: var(--light-color);
     white-space: initial;
+  }
+
+  header nav .nav-sections .default-content-wrapper > ul > li:hover > ul,
+  header nav .nav-sections .default-content-wrapper > ul > li:focus-within > ul,
+  header nav .nav-sections .default-content-wrapper > ul > li[aria-expanded='true'] > ul {
+    display: block;
   }
 
   header nav .nav-sections .default-content-wrapper > ul > li > ul::before {
