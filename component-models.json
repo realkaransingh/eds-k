@@ -253,6 +253,28 @@
             "value": "bg-blue"
           }
         ]
+      },
+      {
+        "component": "select",
+        "name": "classes",
+        "value": "",
+        "label": "Text Color",
+        "description": "The quote text color",
+        "valueType": "string",
+        "options": [
+          {
+            "name": "Red",
+            "value": "color-red"
+          },
+          {
+            "name": "Green",
+            "value": "color-green"
+          },
+          {
+            "name": "Blue",
+            "value": "color-blue"
+          }
+        ]
       }
      ]
   }

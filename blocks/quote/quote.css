@@ -69,3 +69,15 @@
 .block.quote.bg-blue {
     background-color: blue;
 }
+
+.block.quote.color-red {
+    color: red;
+}
+
+.block.quote.color-green {
+    color: green;
+}
+
+.block.quote.color-blue {
+    color: blue;
+}
