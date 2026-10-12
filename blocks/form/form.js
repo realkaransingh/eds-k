@@ -464,41 +464,7 @@ function enableSubmit(form, config, statusEl) {
  * @param {Element} block
  */
 export default async function decorate(block) {
-  const rowsBefore = [...block.children].map((row) => ({
-    aueResource: row.getAttribute('data-aue-resource'),
-    aueType: row.getAttribute('data-aue-type'),
-    aueModel: row.getAttribute('data-aue-model'),
-    aueLabel: row.getAttribute('data-aue-label'),
-    cellTexts: [...row.children].map((c) => c.textContent.trim().slice(0, 40)),
-  }));
-  const aueBefore = block.querySelectorAll('[data-aue-resource]').length;
-
   const { config, items } = parseBlock(block);
-  // #region agent log
-  fetch('http://127.0.0.1:7505/ingest/b2ae6543-003b-473d-b806-369c0339e478', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6850fe' },
-    body: JSON.stringify({
-      sessionId: '6850fe',
-      runId: 'post-fix',
-      hypothesisId: 'H1-H3-H5',
-      location: 'form.js:decorate:before',
-      message: 'form decorate input',
-      data: {
-        rowCount: rowsBefore.length,
-        aueBefore,
-        itemsParsed: items.length,
-        fieldItems: items.filter((i) => i.kind === 'field').length,
-        configMode: config.submitMode,
-        formId: config.formId,
-        blockHasAue: block.hasAttribute('data-aue-resource'),
-        htmlUeEdit: document.documentElement.className,
-        rowsBefore,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   const form = el('form', 'form-element');
   form.setAttribute('novalidate', '');
@@ -541,28 +507,4 @@ export default async function decorate(block) {
 
   enableSubmit(form, config, status);
   block.replaceChildren(form);
-  // #region agent log
-  const aueAfter = block.querySelectorAll('[data-aue-resource]').length;
-  fetch('http://127.0.0.1:7505/ingest/b2ae6543-003b-473d-b806-369c0339e478', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6850fe' },
-    body: JSON.stringify({
-      sessionId: '6850fe',
-      runId: 'post-fix',
-      hypothesisId: 'H1-H5',
-      location: 'form.js:decorate:after',
-      message: 'form decorate after replaceChildren',
-      data: {
-        aueAfter,
-        childCount: block.children.length,
-        formFieldCount: form.querySelectorAll('.form-field').length,
-        placeholderCount: form.querySelectorAll('.form-field-placeholder').length,
-        authorItemCount: form.querySelectorAll('.form-author-item').length,
-        strippedAue: aueBefore > 0 && aueAfter === 0,
-        movedAue: aueBefore > 0 && aueAfter > 0,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 }
