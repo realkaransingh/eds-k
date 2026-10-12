@@ -70,10 +70,10 @@
     --heading-font-size-s: 20px;
     --heading-font-size-xs: 18px;
 
-    /* nav height — two-tier desktop header */
+    /* nav height — two-tier desktop header (+1px bottom border) */
     --nav-top-height: 64px;
     --nav-bottom-height: 52px;
-    --nav-height: calc(var(--nav-top-height) + var(--nav-bottom-height));
+    --nav-height: calc(var(--nav-top-height) + var(--nav-bottom-height) + 1px);
   }
 }
 
@@ -116,7 +116,7 @@ h6 {
   font-family: var(--heading-font-family);
   font-weight: 600;
   line-height: 1.25;
-  scroll-margin: 40px;
+  scroll-margin-top: var(--nav-height);
 }
 
 h1 { font-size: var(--heading-font-size-xxl); }

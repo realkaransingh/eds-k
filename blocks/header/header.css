@@ -510,6 +510,13 @@ header nav[aria-expanded='true'] .nav-tools {
     padding: 0 32px;
   }
 
+  /* reset mobile-drawer padding so reserved --nav-height matches real bar */
+  header nav .nav-sections,
+  header nav[aria-expanded='true'] .nav-sections,
+  header nav[aria-expanded='false'] .nav-sections {
+    padding: 0;
+  }
+
   header nav .nav-hamburger {
     display: none;
     visibility: hidden;
