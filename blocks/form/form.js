@@ -3,6 +3,8 @@
  * @param {Element} block The block element
  */
 
+import { moveInstrumentation } from '../../scripts/scripts.js';
+
 const FIELD_TYPES = new Set([
   'text', 'email', 'tel', 'textarea', 'radio', 'checkbox', 'select', 'date',
 ]);
@@ -119,11 +121,14 @@ function applySettingsRow(texts, config) {
 
 /**
  * @param {Element} block
- * @returns {{ config: typeof DEFAULT_CONFIG, fields: Array<object> }}
+ * @returns {{
+ *   config: typeof DEFAULT_CONFIG,
+ *   items: Array<{ row: Element, kind: 'config'|'settings'|'field', field?: object }>
+ * }}
  */
 function parseBlock(block) {
   const config = { ...DEFAULT_CONFIG };
-  const fields = [];
+  const items = [];
   let settingsApplied = false;
 
   [...block.children].forEach((row) => {
@@ -137,31 +142,70 @@ function parseBlock(block) {
       const prop = CONFIG_KEYS[key];
       const [, value] = texts;
       if (value) config[prop] = value;
+      items.push({ row, kind: 'config' });
       return;
     }
 
-    if (!settingsApplied && applySettingsRow(texts, config)) {
+    const aueModel = row.getAttribute('data-aue-model');
+    if ((!settingsApplied && applySettingsRow(texts, config))
+      || aueModel === 'form-settings') {
+      if (!settingsApplied) applySettingsRow(texts, config);
       settingsApplied = true;
+      items.push({ row, kind: 'settings' });
       return;
     }
 
     const [typeRaw, fieldName, label, optionsRaw = ''] = texts;
     const type = typeRaw?.toLowerCase();
-    if (!FIELD_TYPES.has(type) || cells.length < 3) return;
+    if (!FIELD_TYPES.has(type) || cells.length < 3) {
+      // Keep UE-instrumented rows even when properties are still empty
+      if (row.hasAttribute('data-aue-resource') || aueModel === 'form-field') {
+        items.push({
+          row,
+          kind: 'field',
+          field: {
+            type: FIELD_TYPES.has(type) ? type : 'text',
+            name: fieldName || '',
+            label: label || '',
+            required: false,
+            placeholder: '',
+            help: '',
+            choices: [],
+          },
+        });
+      }
+      return;
+    }
 
     const optionsMeta = parseOptionsCell(optionsRaw);
-    fields.push({
-      type,
-      name: fieldName,
-      label,
-      required: optionsMeta.required,
-      placeholder: optionsMeta.placeholder,
-      help: optionsMeta.help,
-      choices: optionsMeta.choices,
+    items.push({
+      row,
+      kind: 'field',
+      field: {
+        type,
+        name: fieldName,
+        label,
+        required: optionsMeta.required,
+        placeholder: optionsMeta.placeholder,
+        help: optionsMeta.help,
+        choices: optionsMeta.choices,
+      },
     });
   });
 
-  return { config, fields };
+  return { config, items };
+}
+
+/**
+ * Placeholder so UE can select an item before name/label are authored.
+ * @param {object} [field]
+ * @returns {HTMLElement}
+ */
+function buildFieldPlaceholder(field) {
+  const wrap = el('div', 'form-field form-field-placeholder');
+  const type = field?.type || 'text';
+  wrap.textContent = field?.label || field?.name || `Form field (${type}) — set Name and Label in Properties`;
+  return wrap;
 }
 
 /**
@@ -420,16 +464,68 @@ function enableSubmit(form, config, statusEl) {
  * @param {Element} block
  */
 export default async function decorate(block) {
-  const { config, fields } = parseBlock(block);
+  const rowsBefore = [...block.children].map((row) => ({
+    aueResource: row.getAttribute('data-aue-resource'),
+    aueType: row.getAttribute('data-aue-type'),
+    aueModel: row.getAttribute('data-aue-model'),
+    aueLabel: row.getAttribute('data-aue-label'),
+    cellTexts: [...row.children].map((c) => c.textContent.trim().slice(0, 40)),
+  }));
+  const aueBefore = block.querySelectorAll('[data-aue-resource]').length;
+
+  const { config, items } = parseBlock(block);
+  // #region agent log
+  fetch('http://127.0.0.1:7505/ingest/b2ae6543-003b-473d-b806-369c0339e478', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6850fe' },
+    body: JSON.stringify({
+      sessionId: '6850fe',
+      runId: 'post-fix',
+      hypothesisId: 'H1-H3-H5',
+      location: 'form.js:decorate:before',
+      message: 'form decorate input',
+      data: {
+        rowCount: rowsBefore.length,
+        aueBefore,
+        itemsParsed: items.length,
+        fieldItems: items.filter((i) => i.kind === 'field').length,
+        configMode: config.submitMode,
+        formId: config.formId,
+        blockHasAue: block.hasAttribute('data-aue-resource'),
+        htmlUeEdit: document.documentElement.className,
+        rowsBefore,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   const form = el('form', 'form-element');
   form.setAttribute('novalidate', '');
   form.dataset.submitMode = config.submitMode;
   if (config.formId) form.dataset.formId = config.formId;
   if (config.spreadsheetPath) form.dataset.spreadsheetPath = config.spreadsheetPath;
 
-  fields.forEach((field) => {
-    const fieldEl = buildField(field);
-    if (fieldEl) form.append(fieldEl);
+  items.forEach(({ row, kind, field }) => {
+    if (kind === 'field') {
+      let fieldEl = buildField(field);
+      if (!fieldEl && row.hasAttribute('data-aue-resource')) {
+        fieldEl = buildFieldPlaceholder(field);
+      }
+      if (!fieldEl) return;
+      moveInstrumentation(row, fieldEl);
+      form.append(fieldEl);
+      return;
+    }
+
+    // Settings / config rows: keep a selectable node in UE only
+    if (!row.hasAttribute('data-aue-resource')) return;
+    const wrap = el('div', `form-author-item form-author-${kind}`);
+    wrap.textContent = kind === 'settings'
+      ? `Form settings (${config.submitMode || 'rest'})`
+      : 'Form configuration';
+    moveInstrumentation(row, wrap);
+    form.append(wrap);
   });
 
   const actions = el('div', 'form-actions');
@@ -445,4 +541,28 @@ export default async function decorate(block) {
 
   enableSubmit(form, config, status);
   block.replaceChildren(form);
+  // #region agent log
+  const aueAfter = block.querySelectorAll('[data-aue-resource]').length;
+  fetch('http://127.0.0.1:7505/ingest/b2ae6543-003b-473d-b806-369c0339e478', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6850fe' },
+    body: JSON.stringify({
+      sessionId: '6850fe',
+      runId: 'post-fix',
+      hypothesisId: 'H1-H5',
+      location: 'form.js:decorate:after',
+      message: 'form decorate after replaceChildren',
+      data: {
+        aueAfter,
+        childCount: block.children.length,
+        formFieldCount: form.querySelectorAll('.form-field').length,
+        placeholderCount: form.querySelectorAll('.form-field-placeholder').length,
+        authorItemCount: form.querySelectorAll('.form-author-item').length,
+        strippedAue: aueBefore > 0 && aueAfter === 0,
+        movedAue: aueBefore > 0 && aueAfter > 0,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 }

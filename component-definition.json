@@ -171,7 +171,9 @@
                 "template": {
                   "name": "FormField",
                   "model": "form-field",
-                  "type": "text"
+                  "type": "text",
+                  "fieldName": "field",
+                  "label": "Field label"
                 }
               }
             }
