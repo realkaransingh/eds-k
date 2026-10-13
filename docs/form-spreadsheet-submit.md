@@ -11,7 +11,9 @@
    - **Form Button** — submit or reset (if omitted, a default Submit button is rendered)
 4. Delete and re-add any Form / Form Field / Form Settings created with older definitions; then hard-refresh UE.
 
-Field **Name** (`fieldName`) is used in the submission payload. For spreadsheet submit it must match the column header. Optional settings (required, placeholder, help, choices) use the Settings / Choices textarea on each item.
+Field **Name** (`fieldName`) is used in the submission payload. For spreadsheet submit it must match the column header.
+
+**Form Options — Choices:** one option per line, or comma-separated (`one, two, three`). Simple space-separated tokens also work (`one two three`). For multi-word labels use a newline per option or `value|Label`.
 
 The browser never talks to AEM Author directly. It `POST`s JSON (no client `Authorization` header) to a **public proxy** (`submitUrl`). The proxy appends a row to an AEM Author spreadsheet.
 

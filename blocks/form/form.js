@@ -61,6 +61,34 @@ function fieldDomId(name, suffix = '') {
   return suffix ? `${base}-${suffix}` : base;
 }
 
+const BLOCK_CONFIG_PROPS = ['formId', 'submitMode', 'submitUrl', 'spreadsheetPath', 'submitLabel'];
+
+/**
+ * Split author choice lines: newlines, commas, or simple space-separated tokens.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function splitChoiceLines(text = '') {
+  let lines = String(text)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 1) {
+    const single = lines[0] || String(text).trim();
+    if (!single) return [];
+    if (single.includes(',')) {
+      lines = single.split(',').map((part) => part.trim()).filter(Boolean);
+    } else if (!single.includes('|') && /\s/.test(single)) {
+      // "one two three four" → four choices (use commas/newlines for multi-word labels)
+      lines = single.split(/\s+/).filter(Boolean);
+    } else {
+      lines = [single];
+    }
+  }
+  return lines;
+}
+
 /**
  * Settings / choices cell: required / placeholder / help / choice lines.
  * @param {string} optionsText
@@ -74,30 +102,97 @@ function parseLegacyOptionsCell(optionsText = '') {
     choices: [],
   };
 
-  String(optionsText)
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((line) => {
-      const lower = line.toLowerCase();
-      if (lower === 'required' || lower === 'required:true' || lower === 'required: true') {
-        result.required = true;
-        return;
-      }
-      if (lower.startsWith('placeholder:')) {
-        result.placeholder = line.slice('placeholder:'.length).trim();
-        return;
-      }
-      if (lower.startsWith('help:')) {
-        result.help = line.slice('help:'.length).trim();
-        return;
-      }
-      const [value, ...labelParts] = line.split('|');
-      const label = labelParts.length ? labelParts.join('|').trim() : value.trim();
-      result.choices.push({ value: value.trim(), label });
-    });
+  splitChoiceLines(optionsText).forEach((line) => {
+    const lower = line.toLowerCase();
+    if (lower === 'required' || lower === 'required:true' || lower === 'required: true') {
+      result.required = true;
+      return;
+    }
+    if (lower.startsWith('placeholder:')) {
+      result.placeholder = line.slice('placeholder:'.length).trim();
+      return;
+    }
+    if (lower.startsWith('help:')) {
+      result.help = line.slice('help:'.length).trim();
+      return;
+    }
+    const [value, ...labelParts] = line.split('|');
+    const label = labelParts.length ? labelParts.join('|').trim() : value.trim();
+    result.choices.push({ value: value.trim(), label });
+  });
 
   return result;
+}
+
+/**
+ * Read UE `data-aue-prop` values belonging to this item/row only.
+ * @param {Element} root
+ * @returns {Record<string, string>}
+ */
+function readAueProps(root) {
+  const props = {};
+  if (!root) return props;
+
+  if (root.hasAttribute('data-aue-prop')) {
+    props[root.getAttribute('data-aue-prop')] = root.textContent.trim();
+  }
+
+  root.querySelectorAll('[data-aue-prop]').forEach((node) => {
+    if (root.hasAttribute('data-aue-resource')) {
+      const owner = node.closest('[data-aue-resource]');
+      if (owner !== root) return;
+    }
+    const name = node.getAttribute('data-aue-prop');
+    if (name) props[name] = node.textContent.trim();
+  });
+
+  return props;
+}
+
+/**
+ * Block model props from UE (data-aue-prop on direct children).
+ * @param {Element} block
+ * @param {typeof DEFAULT_CONFIG} config
+ */
+function applyAueBlockProps(block, config) {
+  [...block.children].forEach((row) => {
+    const model = row.getAttribute('data-aue-model') || '';
+    if (model.startsWith('form-')) return; // child items
+
+    const propName = row.getAttribute('data-aue-prop');
+    if (propName && BLOCK_CONFIG_PROPS.includes(propName)) {
+      const value = row.textContent.trim();
+      if (value) config[propName] = value;
+      return;
+    }
+
+    const nested = row.querySelector(':scope > [data-aue-prop]');
+    if (nested) {
+      const name = nested.getAttribute('data-aue-prop');
+      if (name && BLOCK_CONFIG_PROPS.includes(name)) {
+        const value = nested.textContent.trim();
+        if (value) config[name] = value;
+      }
+    }
+  });
+
+  // Also props directly under the block resource
+  const blockProps = readAueProps(block);
+  BLOCK_CONFIG_PROPS.forEach((key) => {
+    if (blockProps[key]) config[key] = blockProps[key];
+  });
+}
+
+/**
+ * @param {Element} row
+ * @returns {boolean}
+ */
+function isBlockConfigRow(row) {
+  const model = row.getAttribute('data-aue-model') || '';
+  if (model.startsWith('form-')) return false;
+  const prop = row.getAttribute('data-aue-prop')
+    || row.querySelector(':scope > [data-aue-prop]')?.getAttribute('data-aue-prop');
+  return BLOCK_CONFIG_PROPS.includes(prop);
 }
 
 /**
@@ -141,11 +236,16 @@ function applyBlockLevelConfig(block, config) {
  */
 function parseItemRow(row, texts, aueModel) {
   const instrumented = row.hasAttribute('data-aue-resource');
+  const props = readAueProps(row);
 
   if (aueModel === 'form-text'
+    || props.constraint
     || (TEXT_TYPES.has(texts[0]?.toLowerCase()) && texts.length >= 3)) {
-    const [constraint, fieldName, label, settingsRaw = ''] = texts;
-    const type = TEXT_TYPES.has(constraint?.toLowerCase()) ? constraint.toLowerCase() : 'text';
+    const constraint = props.constraint || texts[0] || 'text';
+    const fieldName = props.fieldName ?? texts[1] ?? '';
+    const label = props.label ?? texts[2] ?? '';
+    const settingsRaw = props.settings ?? texts[3] ?? '';
+    const type = TEXT_TYPES.has(constraint.toLowerCase()) ? constraint.toLowerCase() : 'text';
     const settings = parseLegacyOptionsCell(settingsRaw);
     return {
       kind: 'field',
@@ -162,9 +262,13 @@ function parseItemRow(row, texts, aueModel) {
   }
 
   if (aueModel === 'form-options'
+    || props.optionKind
     || (OPTION_TYPES.has(texts[0]?.toLowerCase()) && texts.length >= 3)) {
-    const [optionType, fieldName, label, choicesRaw = ''] = texts;
-    const type = OPTION_TYPES.has(optionType?.toLowerCase()) ? optionType.toLowerCase() : 'select';
+    const optionKind = props.optionKind || texts[0] || 'select';
+    const fieldName = props.fieldName ?? texts[1] ?? '';
+    const label = props.label ?? texts[2] ?? '';
+    const choicesRaw = props.choices ?? texts[3] ?? '';
+    const type = OPTION_TYPES.has(optionKind.toLowerCase()) ? optionKind.toLowerCase() : 'select';
     const settings = parseLegacyOptionsCell(choicesRaw);
     return {
       kind: 'field',
@@ -180,12 +284,22 @@ function parseItemRow(row, texts, aueModel) {
     };
   }
 
+  const looksHiddenProps = props.fieldName !== undefined
+    && props.value !== undefined
+    && !props.constraint
+    && !props.optionKind
+    && !props.buttonKind
+    && !props.choices
+    && !props.settings;
+
   if (aueModel === 'form-hidden'
+    || looksHiddenProps
     || (texts.length === 2
       && !CONFIG_KEYS[texts[0]?.toLowerCase()]
       && !BUTTON_TYPES.has(texts[0]?.toLowerCase())
       && !LEGACY_FIELD_TYPES.has(texts[0]?.toLowerCase()))) {
-    const [fieldName, value = ''] = texts;
+    const fieldName = props.fieldName ?? texts[0] ?? '';
+    const value = props.value ?? texts[1] ?? '';
     if (aueModel === 'form-hidden' || instrumented || (fieldName && !CONFIG_KEYS[fieldName.toLowerCase()])) {
       return {
         kind: 'field',
@@ -204,9 +318,11 @@ function parseItemRow(row, texts, aueModel) {
   }
 
   if (aueModel === 'form-button'
+    || props.buttonKind
     || (texts.length === 2 && BUTTON_TYPES.has(texts[0]?.toLowerCase()))) {
-    const [buttonType, label = ''] = texts;
-    const type = BUTTON_TYPES.has(buttonType?.toLowerCase()) ? buttonType.toLowerCase() : 'submit';
+    const buttonKind = props.buttonKind || texts[0] || 'submit';
+    const label = props.label ?? texts[1] ?? '';
+    const type = BUTTON_TYPES.has(buttonKind.toLowerCase()) ? buttonKind.toLowerCase() : 'submit';
     return {
       kind: 'button',
       button: {
@@ -280,10 +396,13 @@ function parseItemRow(row, texts, aueModel) {
 function parseBlock(block) {
   const config = { ...DEFAULT_CONFIG };
   applyBlockLevelConfig(block, config);
+  applyAueBlockProps(block, config);
   const items = [];
   let settingsApplied = false;
 
   [...block.children].forEach((row) => {
+    if (isBlockConfigRow(row)) return;
+
     const cells = [...row.children];
     if (!cells.length) return;
 
@@ -295,10 +414,6 @@ function parseBlock(block) {
       const prop = CONFIG_KEYS[key];
       const [, value] = texts;
       if (value) config[prop] = value;
-      // Key-value config rows are not form controls; keep UE node only if instrumented
-      if (row.hasAttribute('data-aue-resource')) {
-        items.push({ row, kind: 'config' });
-      }
       return;
     }
 

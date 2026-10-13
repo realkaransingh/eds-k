@@ -209,7 +209,7 @@
           "valueType": "string",
           "name": "choices",
           "label": "Choices / Settings",
-          "description": "Optional: required | placeholder: text | help: text. Then one choice per line (value|Label or Label)."
+          "description": "Optional: required | placeholder: text | help: text. Then choices: one per line, or comma-separated (one, two, three). For multi-word labels use newlines or value|Label."
         }
       ]
     },
