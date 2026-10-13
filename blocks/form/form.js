@@ -63,6 +63,29 @@ function fieldDomId(name, suffix = '') {
 
 const BLOCK_CONFIG_PROPS = ['formId', 'submitMode', 'submitUrl', 'spreadsheetPath', 'submitLabel'];
 
+/** Block model field order when UE emits one value per row (preview/live HTML). */
+const POSITIONAL_BLOCK_CONFIG_KEYS = ['formId', 'submitMode', 'submitUrl', 'spreadsheetPath'];
+
+/**
+ * Read authored cell value (plain text or link — prefer absolute URL from href).
+ * @param {Element} cell
+ * @returns {string}
+ */
+function readCellValue(cell) {
+  if (!cell) return '';
+  const link = cell.querySelector('a[href]');
+  if (link) {
+    const href = (link.getAttribute('href') || '').trim();
+    const text = link.textContent.trim();
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+      return href;
+    }
+    if (text) return text;
+    return href;
+  }
+  return cell.textContent.trim();
+}
+
 /**
  * Split author choice lines: newlines, commas, or simple space-separated tokens.
  * @param {string} text
@@ -134,7 +157,7 @@ function readAueProps(root) {
   if (!root) return props;
 
   if (root.hasAttribute('data-aue-prop')) {
-    props[root.getAttribute('data-aue-prop')] = root.textContent.trim();
+    props[root.getAttribute('data-aue-prop')] = readCellValue(root);
   }
 
   root.querySelectorAll('[data-aue-prop]').forEach((node) => {
@@ -143,7 +166,7 @@ function readAueProps(root) {
       if (owner !== root) return;
     }
     const name = node.getAttribute('data-aue-prop');
-    if (name) props[name] = node.textContent.trim();
+    if (name) props[name] = readCellValue(node);
   });
 
   return props;
@@ -161,7 +184,7 @@ function applyAueBlockProps(block, config) {
 
     const propName = row.getAttribute('data-aue-prop');
     if (propName && BLOCK_CONFIG_PROPS.includes(propName)) {
-      const value = row.textContent.trim();
+      const value = readCellValue(row);
       if (value) config[propName] = value;
       return;
     }
@@ -170,7 +193,7 @@ function applyAueBlockProps(block, config) {
     if (nested) {
       const name = nested.getAttribute('data-aue-prop');
       if (name && BLOCK_CONFIG_PROPS.includes(name)) {
-        const value = nested.textContent.trim();
+        const value = readCellValue(nested);
         if (value) config[name] = value;
       }
     }
@@ -226,6 +249,68 @@ function applyBlockLevelConfig(block, config) {
   });
   if (block.classList.contains('spreadsheet')) config.submitMode = 'spreadsheet';
   else if (block.classList.contains('rest')) config.submitMode = 'rest';
+}
+
+/**
+ * Whether this row is a form field/button item (not block-level settings).
+ * @param {Element} row
+ * @returns {boolean}
+ */
+function isDefiniteFormItemRow(row) {
+  const aueModel = row.getAttribute('data-aue-model') || '';
+  if (['form-text', 'form-options', 'form-hidden', 'form-button', 'form-field'].includes(aueModel)) {
+    return true;
+  }
+  if (aueModel === 'form-settings') return true;
+
+  const cells = [...row.children];
+  if (!cells.length) return false;
+
+  const texts = cells.map((cell) => readCellValue(cell));
+  const first = texts[0]?.toLowerCase() || '';
+
+  if (cells.length === 2 && CONFIG_KEYS[first]) return false;
+  if (cells.length === 2 && BUTTON_TYPES.has(first)) return true;
+  if (cells.length >= 3 && LEGACY_FIELD_TYPES.has(first)) return true;
+  if (cells.length === 4) {
+    const probe = { ...DEFAULT_CONFIG };
+    if (applySettingsRow(texts, probe)) return true;
+  }
+  if (cells.length === 2
+    && !CONFIG_KEYS[first]
+    && !BUTTON_TYPES.has(first)
+    && !LEGACY_FIELD_TYPES.has(first)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Core block model: first single-cell rows map to formId, submitMode, submitUrl, spreadsheetPath.
+ * @param {Element} block
+ * @param {typeof DEFAULT_CONFIG} config
+ * @returns {Set<Element>}
+ */
+function applyPositionalBlockConfig(block, config) {
+  const consumed = new Set();
+  let keyIndex = 0;
+
+  [...block.children].some((row) => {
+    if (keyIndex >= POSITIONAL_BLOCK_CONFIG_KEYS.length) return true;
+    if (isBlockConfigRow(row)) return true;
+    if (isDefiniteFormItemRow(row)) return true;
+
+    const cells = [...row.children];
+    if (cells.length !== 1) return true;
+
+    const key = POSITIONAL_BLOCK_CONFIG_KEYS[keyIndex];
+    config[key] = readCellValue(cells[0]);
+    consumed.add(row);
+    keyIndex += 1;
+    return false;
+  });
+
+  return consumed;
 }
 
 /**
@@ -397,22 +482,24 @@ function parseBlock(block) {
   const config = { ...DEFAULT_CONFIG };
   applyBlockLevelConfig(block, config);
   applyAueBlockProps(block, config);
+  const positionalRows = applyPositionalBlockConfig(block, config);
   const items = [];
   let settingsApplied = false;
 
   [...block.children].forEach((row) => {
     if (isBlockConfigRow(row)) return;
+    if (positionalRows.has(row)) return;
 
     const cells = [...row.children];
     if (!cells.length) return;
 
-    const texts = cells.map((cell) => cell.textContent.trim());
+    const texts = cells.map((cell) => readCellValue(cell));
     const key = texts[0]?.toLowerCase();
     const aueModel = row.getAttribute('data-aue-model');
 
     if (cells.length === 2 && CONFIG_KEYS[key]) {
       const prop = CONFIG_KEYS[key];
-      const [, value] = texts;
+      const value = texts[1];
       if (value) config[prop] = value;
       return;
     }
@@ -687,7 +774,7 @@ function enableSubmit(form, config, statusEl) {
       return;
     }
 
-    const submitUrl = config.submitUrl?.trim();
+    const submitUrl = (form.dataset.submitUrl || config.submitUrl || '').trim();
     if (!submitUrl) {
       setStatus(statusEl, 'error', 'Submit URL is not configured.');
       return;
@@ -732,6 +819,7 @@ export default async function decorate(block) {
   form.setAttribute('novalidate', '');
   form.dataset.submitMode = config.submitMode;
   if (config.formId) form.dataset.formId = config.formId;
+  if (config.submitUrl) form.dataset.submitUrl = config.submitUrl;
   if (config.spreadsheetPath) form.dataset.spreadsheetPath = config.spreadsheetPath;
 
   const actions = el('div', 'form-actions');
